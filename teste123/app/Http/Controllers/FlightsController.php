@@ -8,6 +8,9 @@ use GuzzleHttp\Client;
 
 class FlightsController extends BaseController
 {
+    /* 
+     * Realiza a requisição dos voos e depois faz as operações necessárias
+     */
     public function get(Request $request) 
     {
         $client = new Client();
@@ -15,12 +18,15 @@ class FlightsController extends BaseController
 
         $promise = $client->sendAsync($request)->then(function ($response) {
             $voos = json_decode($response->getBody()->getContents(), true);
-            $this->agrupaSabosta($voos);
+            $this->agrupaPorTipoETarifa($voos);
         });
         $promise->wait();
     }
-
-    public function agrupaSabosta ($voos) 
+    /*
+     * Realiza o agrupamento criando um array associativo cujas chaves são 
+     * o tipo de voo (ida ou volta) e a tarifa
+    */
+    public function agrupaPorTipoETarifa ($voos) 
     {
         $tarifas = array();
         $tipos = array();
@@ -47,7 +53,9 @@ class FlightsController extends BaseController
         }
         $this->agrupaIdaEVolta($tarifas, $tipos);
     }
-
+    /*
+     * Separa os preços agrupando os voos com preços similares
+     */
     private function agrupaIdaEVolta($tarifas, $tipos) 
     {
         $grupoIda = array();
@@ -56,9 +64,16 @@ class FlightsController extends BaseController
             $grupoIda = $this->group_by('price', $tarifas[$tipo.'|Ida']) + $grupoIda;
             $grupoVolta = $this->group_by('price', $tarifas[$tipo.'|Volta']) + $grupoVolta;
         }
+        /*
+         * A partir desses arrays, será feita uma multiplicação cruzada, o que vai gerar os grupos finais de voos
+         */
         var_dump(array_keys($grupoIda));
+        var_dump(array_keys($grupoVolta));
     }
-
+    
+    /*
+     * Função simples de agrupamento
+     */
     function group_by($key, $data) {
         $result = array();
     
