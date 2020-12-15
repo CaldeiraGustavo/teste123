@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Laravel\Lumen\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
+use Illuminate\Support\Collection;
 
 class FlightsController extends BaseController
 {
@@ -58,17 +59,27 @@ class FlightsController extends BaseController
      */
     private function agrupaIdaEVolta($tarifas, $tipos) 
     {
-        $grupoIda = array();
-        $grupoVolta = array();
+        $idas = array();
+        $voltas = array();
+        $grupoFinal = array();
+        $id = 0;
         foreach($tipos as $tipo) {
-            $grupoIda = $this->group_by('price', $tarifas[$tipo.'|Ida']) + $grupoIda;
-            $grupoVolta = $this->group_by('price', $tarifas[$tipo.'|Volta']) + $grupoVolta;
+            $idas = $this->group_by('price', $tarifas[$tipo.'|Ida']) + $idas;
+            $voltas = $this->group_by('price', $tarifas[$tipo.'|Volta']) + $voltas;
+
+            $collection = collect(array_keys($idas));
+            $matrix = $collection->crossJoin(array_keys($voltas));
+            
+            foreach($matrix->all() as $mat) {
+                $grupoFinal[] = array(
+                    'uniqueId' => $id,
+                    'outbound' => $grupoIda[$mat[0]],
+                    'inbound' => $voltas[$mat[1]],
+                    'totalPrice' => $mat[0] + $mat[1]
+                );
+                $id++;
+            }
         }
-        /*
-         * A partir desses arrays, será feita uma multiplicação cruzada, o que vai gerar os grupos finais de voos
-         */
-        var_dump(array_keys($grupoIda));
-        var_dump(array_keys($grupoVolta));
     }
     
     /*
