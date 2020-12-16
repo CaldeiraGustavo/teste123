@@ -12,7 +12,7 @@ class FlightsController extends BaseController
     /* 
      * Realiza a requisição dos voos e depois faz as operações necessárias
      */
-    public function get(Request $request) 
+    public function get() 
     {
         $client = new Client();
         $request = new \GuzzleHttp\Psr7\Request('GET', 'http://prova.123milhas.net/api/flights');
@@ -55,7 +55,10 @@ class FlightsController extends BaseController
         $this->agrupaIdaEVolta($tarifas, $tipos);
     }
     /*
-     * Separa os preços agrupando os voos com preços similares
+     * Para cada tipo de tarifa, agrupa as idas e voltas pelo preço,
+     * assim terá um vetor com id's que possuem o mesmo preço.
+     * depois é feito um crossJoin com as chaves do array de ida e volta
+     * com isso, terão todas as possibilidades de ida e volta com o mesmo preço
      */
     private function agrupaIdaEVolta($tarifas, $tipos) 
     {
@@ -64,8 +67,8 @@ class FlightsController extends BaseController
         $grupoFinal = array();
         $id = 0;
         foreach($tipos as $tipo) {
-            $idas = $this->group_by('price', $tarifas[$tipo.'|Ida']) + $idas;
-            $voltas = $this->group_by('price', $tarifas[$tipo.'|Volta']) + $voltas;
+            $idas = $this->agrupar('price', $tarifas[$tipo.'|Ida']) + $idas;
+            $voltas = $this->agrupar('price', $tarifas[$tipo.'|Volta']) + $voltas;
 
             $collection = collect(array_keys($idas));
             $matrix = $collection->crossJoin(array_keys($voltas));
@@ -73,19 +76,30 @@ class FlightsController extends BaseController
             foreach($matrix->all() as $mat) {
                 $grupoFinal[] = array(
                     'uniqueId' => $id,
-                    'outbound' => $grupoIda[$mat[0]],
+                    'outbound' => $idas[$mat[0]],
                     'inbound' => $voltas[$mat[1]],
                     'totalPrice' => $mat[0] + $mat[1]
                 );
                 $id++;
             }
         }
+        $grupoOrdenado = $this->ordenar($grupoFinal);
+    }
+
+    function ordenar($vetor) {
+        $price = array();
+        foreach ($vetor as $key => $row)
+        {
+            $price[$key] = $row['totalPrice'];
+        }
+        array_multisort($price, SORT_ASC, $vetor);
+        return $vetor;
     }
     
     /*
      * Função simples de agrupamento
      */
-    function group_by($key, $data) {
+    function agrupar($key, $data) {
         $result = array();
     
         foreach($data as $val) {
