@@ -19,7 +19,9 @@ class FlightsController extends BaseController
 
         $promise = $client->sendAsync($request)->then(function ($response) {
             $voos = json_decode($response->getBody()->getContents(), true);
-            $this->agrupaPorTipoETarifa($voos);
+            $grupos = $this->agrupaPorTipoETarifa($voos);
+            $json = $this->formataJsonFinal($voos, $grupos);
+            var_dump($json);
         });
         $promise->wait();
     }
@@ -52,7 +54,7 @@ class FlightsController extends BaseController
                 }
             }
         }
-        $this->agrupaIdaEVolta($tarifas, $tipos);
+        return $this->agrupaIdaEVolta($tarifas, $tipos);
     }
     /*
      * Para cada tipo de tarifa, agrupa as idas e voltas pelo preço,
@@ -83,7 +85,7 @@ class FlightsController extends BaseController
                 $id++;
             }
         }
-        $grupoOrdenado = $this->ordenar($grupoFinal);
+        return $this->ordenar($grupoFinal);
     }
 
     function ordenar($vetor) {
@@ -115,5 +117,17 @@ class FlightsController extends BaseController
         }
     
         return $result;
+    }
+
+    function formataJsonFinal($voos, $grupos) {
+        $jsonFinal = array(
+            'flights' => $voos,
+            'groups' => $grupos,
+            'totalGroups' => count($grupos),
+            'totalFlights' => count($voos),
+            'cheapestPrice' => $grupos[0]['totalPrice'],
+            'cheapestGroup' => $grupos[0]['uniqueId']
+        );
+        return $jsonFinal;
     }
 }
