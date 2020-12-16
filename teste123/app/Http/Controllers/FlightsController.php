@@ -88,7 +88,11 @@ class FlightsController extends BaseController
         return $this->ordenar($grupoFinal);
     }
 
-    function ordenar($vetor) {
+    /*
+     * Ordena o vetor a partir de uma chave especifica
+     */
+    function ordenar($vetor) 
+    {
         $price = array();
         foreach ($vetor as $key => $row)
         {
@@ -101,7 +105,8 @@ class FlightsController extends BaseController
     /*
      * Função simples de agrupamento
      */
-    function agrupar($key, $data) {
+    function agrupar($key, $data) 
+    {
         $result = array();
     
         foreach($data as $val) {
@@ -119,7 +124,11 @@ class FlightsController extends BaseController
         return $result;
     }
 
-    function formataJsonFinal($voos, $grupos) {
+    /**
+     * Formata o array para ficar no formato final esperado pelo JSON de resposta
+     */
+    function formataJsonFinal($voos, $grupos) 
+    {
         $jsonFinal = array(
             'flights' => $voos,
             'groups' => $grupos,
